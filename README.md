@@ -1,7 +1,14 @@
 # Introduction
-SteinsOS is a non-preemptive single-threaded kernel based on armv8.
+SteinsOS is an operating system featuring non-preemptive kernel targeting on single-core armv8 architecture.
 
-It is buggy and still in progress. My goal is to make it more stable. Adding more features is not my first priority now.
+It is buggy and still in progress. My current goal is to make it more stable. 
+
+# Document
+Below are SteinsOS docuements, one in Taiwanese, and the other in English.
+
+[Taiwanese](https://hackmd.io/@wywh0917/rJEE2msfY)
+
+[English](https://hackmd.io/@wywh0917/H1kKW4ift)
 
 
 # Prerequisites
@@ -42,4 +49,5 @@ $ ./cat ./README.md
 ```
 
 # Contribution
-Pull requests, bug reports and any kind of suggestions are welcomed.
+
+Pull requests, bug reports and any kind of suggestion are very welcomed.
