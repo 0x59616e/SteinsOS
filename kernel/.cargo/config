@@ -1,0 +1,7 @@
+[build]
+target = "aarch64-unknown-none"
+rustflags = ["-Ctarget-feature=-neon,-fp,-sve"]
+
+[unstable]
+build-std-features = ["compiler-builtins-mem"]
+build-std = ["core", "compiler_builtins", "alloc"]

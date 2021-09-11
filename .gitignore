@@ -1,0 +1,5 @@
+*.bin
+*.sym
+*.img
+/kernel/target
+/mkfs/target
