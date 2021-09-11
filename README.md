@@ -1,12 +1,20 @@
 # Introduction
-SteinsOS is a non-preemptive single-threaded kernel based on armv8. \
-It is buggy and still in progress. My goal is to make it more stable. Adding more features is not my first priority now. \
-Any kind of suggestions are welcomed. \
+SteinsOS is a non-preemptive single-threaded kernel based on armv8.
+
+It is buggy and still in progress. My goal is to make it more stable. Adding more features is not my first priority now.
+
+
 # Prerequisites
 Here's what you need: 
 - [Rust compiler](https://www.rust-lang.org/tools/install)
-- aarch64-none-elf toolchain
+```
+$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+- [aarch64-none-elf toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
 - qemu-system-aarch64
+```
+$ sudo apt-get install -y qemu-system-aarch64
+```
 
 # Build and run
 Just run `make qemu`
@@ -32,3 +40,6 @@ READMD.md
 $ ./cat ./README.md
 ...
 ```
+
+# Contribution
+Pull requests, bug reports and any kind of suggestions are welcomed.
