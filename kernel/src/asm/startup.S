@@ -2,7 +2,6 @@
 .type startup @function
 
 startup:
-    mov x3, x0
     // initialize stack
     msr spsel, 1
     ldr x0, =stack_top
