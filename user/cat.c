@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     char *buf = malloc(2048);
     int count;
     if ((count = read(fd, buf, 2048)) == -1) {
-        printf("Can't read %s", path);
+        printf("Can't read %s\n", path);
         return -1;
     }
     buf[count] = '\0';

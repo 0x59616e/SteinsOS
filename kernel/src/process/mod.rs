@@ -136,12 +136,12 @@ impl Process {
 }
 
 pub fn put_user_input(c: u8) {
-    let (buffer, processes) = unsafe {
+    let (buffer, waiting_list) = unsafe {
         USER_INPUT.assume_init_mut()
     };
 
     buffer.push_back(c);
-    for proc in processes {
+    for proc in waiting_list {
         unsafe {
             (**proc).wakeup();
         }
@@ -156,14 +156,25 @@ pub fn get_user_input(buf: &mut [u8]) -> Result<usize, ()> {
     let mut len = 0;
     loop {
         while let Some(c) = buffer.pop_front() {
-            print!("{}", c as char);
-            if c == b'\r' || c == b'\n' {
-                // time to return
-                return Ok(len);
+            if len > 0 || (c != 8 && c != 0x7f) {
+                print!("{}", c as char);
             }
 
-            *(buf.get_mut(len).ok_or(())?) = c;
-            len += 1;
+            match c {
+                // time to return
+                b'\r' | b'\n' =>  return Ok(len),
+                8 | 0x7f => {
+                    // backspace
+                    if len > 0 {
+                        len -= 1;
+                        *(buf.get_mut(len).ok_or(())?) = 0;
+                    }
+                }
+                _ => {
+                    *(buf.get_mut(len).ok_or(())?) = c;
+                    len += 1;
+                }
+            }
         }
         let proc = current();
         waiting_list.push(proc as *mut Process);
