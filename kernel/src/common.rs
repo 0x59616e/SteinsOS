@@ -16,10 +16,20 @@ pub const GICCSIZE:   usize = 0x00010000;
 pub const VIRTMMIOBASE: usize = 0x0a000000;
 pub const VIRTMMIOSIZE: usize = 0x00004000;
 
+pub fn round_up_with(v: usize, s: usize) -> usize {
+    assert!(s & (s - 1) == 0);
+    (v + s - 1) & !(s - 1)
+}
+
+pub fn round_down_with(v: usize, s: usize) -> usize {
+    assert!(s & (s - 1) == 0);
+    v & !(s - 1)
+}
+
 pub fn round_up(addr: usize) -> usize {
-    (addr + PAGESIZE - 1) & !(PAGESIZE - 1)
+    round_up_with(addr, PAGESIZE)
 }
 
 pub fn round_down(addr: usize) -> usize {
-    addr & !(PAGESIZE - 1)
+    round_down_with(addr, PAGESIZE)
 }
