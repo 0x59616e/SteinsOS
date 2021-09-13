@@ -3,6 +3,7 @@ use crate::print;
 use super::{*, inode::Inode};
 use alloc::sync::Arc;
 use crate::process;
+use crate::common::*;
 
 pub struct File {
     sz: usize,
@@ -76,12 +77,12 @@ impl FileOperation for DiskFile {
         let mut curr = start;
         let mut buf_curr = 0;
 
-        for i in (start / BLOCK_SIZE)..=(end / BLOCK_SIZE) {
+        for i in (start / BLOCK_SIZE)..(round_up_with(end, BLOCK_SIZE) / BLOCK_SIZE) {
             let data = self.inode.get_data(i).ok_or(())?;
-            let next = core::cmp::min((curr + 1 + (BLOCK_SIZE - 1)) & !(BLOCK_SIZE - 1), end);
+            let next = core::cmp::min((curr & !1023) + 1024, end);
             let len = next - curr;
             buf[buf_curr..(buf_curr + len)]
-                .copy_from_slice(&data[(curr & (BLOCK_SIZE - 1))..=((next - 1) & (BLOCK_SIZE - 1))]);
+                .copy_from_slice(&data[(curr & 1023)..=((next - 1) & 1023)]);
             curr = next;
             buf_curr += len;
         }
