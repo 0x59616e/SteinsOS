@@ -130,16 +130,6 @@ int getdents(unsigned int fd, struct dirent *dirp, unsigned int count) {
     asm("svc " SYS_GETDENTS);
 }
 
-// TODO: memory management
-void *malloc(size_t size)
-{
-    void *res;
-    if((res = sbrk(size)) == (void *)-1) {
-        return NULL;
-    }
-    return res;
-}
-
 void *sbrk(size_t inc) {
     asm("svc " SYS_SBRK);
 }

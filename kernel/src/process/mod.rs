@@ -465,7 +465,7 @@ pub fn wakeup(channel: usize) {
 pub fn sbrk(inc: isize) -> Result<usize, ()> {
     let proc = current();
     if inc < 0 || proc.heap_end + inc as usize - proc.heap_start > Process::USER_HEAP_SIZE_LIMIT {
-        return Err(());
+        return Ok(0);
     } else {
         let ret = Ok(proc.heap_end);
         proc.heap_end += inc as usize;

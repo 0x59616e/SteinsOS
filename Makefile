@@ -38,7 +38,7 @@ QEMUOPTS+= -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 crt.o: $(USER_DIR)/crt.S
 	$(CC) $(CFLAGS) $<
 
-%:  $(USER_DIR)/crt.o $(USER_DIR)/%.o $(USER_DIR)/libc.o
+%:  $(USER_DIR)/crt.o $(USER_DIR)/%.o $(USER_DIR)/libc.o $(USER_DIR)/malloc.o
 	cd $(USER_DIR) && \
 		$(LD) -z max-page-size=4096 -N --entry __start -Ttext $(USER_BASE) -o $@ $^
 

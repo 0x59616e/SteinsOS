@@ -1,7 +1,7 @@
 # Introduction
 SteinsOS is an operating system featuring non-preemptive kernel targeting on single-core armv8 architecture.
 
-It is buggy and still in progress. My current goal is to make it more stable. 
+It is buggy and still in progress. My current goal is to make it more stable and add some tests.
 
 # Document
 Below are SteinsOS docuements, one in Taiwanese, and the other in English.
