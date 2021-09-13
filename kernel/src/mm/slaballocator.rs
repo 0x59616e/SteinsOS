@@ -2,12 +2,12 @@ use alloc::alloc::{GlobalAlloc, Layout};
 use crate::common::*;
 use super::buddyallocator::BuddyAllocator;
 
-const SLAB_NODE_COUNT: usize = 7;
+const SLAB_NODE_COUNT: usize = 8;
 const MINIMUM_SLAB_SIZE_SHIFT: usize = 3;
 const MINIMUM_SLAB_SIZE: usize = 1 << MINIMUM_SLAB_SIZE_SHIFT;
-const MAXIMUM_SLAB_SIZE: usize = 512;
+const MAXIMUM_SLAB_SIZE: usize = 1024;
 
-// 8, 16, 32, 64, 128, 256, 512
+// 8, 16, 32, 64, 128, 256, 512, 1024
 static mut SLAB_LIST: [SlabNode; SLAB_NODE_COUNT]
                             = [SlabNode(core::ptr::null_mut()); SLAB_NODE_COUNT];
 
