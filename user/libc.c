@@ -47,12 +47,22 @@ int fputs(const char *s, int fd) {
     return write(fd, s, i);
 }
 
+void put_buffer(char *buf, int *pos, int len, char c)
+{
+    buf[*pos] = c;
+    if (*pos == len - 1) {
+        write(STDOUT_FILENO, buf, len);
+        memset(buf, 0, len);
+    }
+    *pos = (*pos + 1) % len;
+}
+
 int printf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
 
-    char buf[1024] = {0};
+    char buf[256] = {0};
     int curr = 0;
 
     for (int i = 0; fmt[i] != '\0'; i++) {
@@ -60,24 +70,26 @@ int printf(const char *fmt, ...)
             i++;
             // string
             char *s = va_arg(ap, char *);
-            for(int j = 0; s[j] != '\0'; j++) {
-                buf[curr++] = s[j];
+            for (int j = 0; s[j] != '\0'; j++) {
+                put_buffer(buf, &curr, 256, s[j]);
             }
         } else if (fmt[i] == '%' && fmt[i + 1] == 'd') {
             i++;
             // int
             int v = va_arg(ap, int);
             int i = 1;
-            while (v / (i * 10) > 0) i *= 10;
-            while (v > 0) {
-                buf[curr++] = (v / i) + '0';
+            while (v / (i * 10)) i *= 10;
+            do {
+                put_buffer(buf, &curr, 256, v / i + '0');
                 v %= i;
                 i /= 10;
-            }
+            } while (i > 0);
         } else {
-            buf[curr++] = fmt[i];
+            put_buffer(buf, &curr, 256, fmt[i]);
         }
     }
+
+    va_end(ap);
     fputs(buf, STDOUT_FILENO);
 }
 
@@ -102,6 +114,7 @@ DIR *fdopendir(int fd)
 
 struct dirent *readdir(DIR *stream) {
     if (stream->len == 0) {
+        // FIXME: File system doesn't allow directory of size over 1024 bytes
         stream->buffer = malloc(1024);
         stream->len = getdents(stream->fd, stream->buffer, 1024);
     } else if (stream->offset == stream->len) {
