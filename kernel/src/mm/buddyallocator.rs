@@ -63,18 +63,7 @@ impl BuddyAllocator {
 unsafe impl FrameAlloc for BuddyAllocator {
     unsafe fn alloc_pages(&self, pg_cnt: usize) -> *mut u8 {
 
-        // https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-        let order = {
-            let mut v = pg_cnt + (pg_cnt == 0) as usize;
-            v -= 1;
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            v |= v >> 32;
-            (v + 1).trailing_zeros() as usize
-        };
+        let order = pg_cnt.next_power_of_two().trailing_zeros() as usize;
 
         let res = {
             Self::request(order, &mut BUDDY_LIST)

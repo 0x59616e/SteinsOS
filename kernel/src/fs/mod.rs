@@ -7,6 +7,7 @@ pub mod superblock;
 
 use buffer::Buffer;
 use file::*;
+use crate::process;
 
 pub const BLOCK_SIZE: usize = 1024;
 
@@ -20,7 +21,7 @@ pub fn init() {
     superblock::init();
 }
 
-fn get_superblock() -> Superblock {
+pub fn get_superblock() -> Superblock {
     unsafe {
         (Buffer::read(0).get_data().as_ptr() as *const Superblock).read()
     }
@@ -31,9 +32,15 @@ pub fn open(path: &[u8], flags: usize) -> Result<File, ()> {
 
     let path = core::str::from_utf8(path).unwrap();
 
-    let mut inode = superblock.get_inode(1);
+    let mut inode = if path.starts_with('.') || !path.starts_with('/') {
+        // current working directory
+        process::current().get_cwd()
+    } else {
+        // root directory
+        superblock.get_root_inode()
+    };
 
-    for name in path.split('/').skip(1) {
+    for name in path.split('/').filter(|name| name.len() > 0) {
         if inode.is_file() {
             return Err(());
         }
@@ -57,6 +64,6 @@ pub fn read(file: &mut File, buf: &mut [u8]) -> Result<usize, ()> {
     file.read(buf)
 }
 
-pub fn write(file: &File, s: &str) -> Result<usize, ()> {
+pub fn write(file: &mut File, s: &str) -> Result<usize, ()> {
    file.write(s)
 }

@@ -36,15 +36,14 @@ $ make qemu
 - C library
 
 # Shell
-You have to use relative or absolute path in the shell:
 ```
-$ ./ls
+$ ls
 .
 shell
 ls
 cat
 READMD.md
-$ ./cat ./README.md
+$ cat ./README.md
 ...
 ```
 

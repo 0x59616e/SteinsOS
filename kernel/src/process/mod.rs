@@ -7,6 +7,8 @@ use crate::fs::file::*;
 use core::mem::MaybeUninit;
 use alloc::collections::vec_deque::VecDeque;
 use alloc::vec::Vec;
+use alloc::sync::Arc;
+use crate::fs::{self, inode::Inode};
 
 mod elf;
 
@@ -78,6 +80,7 @@ pub struct Process {
     page_tb: PageTable,
     channel: Option<usize>,
     child: Vec<u8>,
+    cwd: Option<u32>,
     // 0 => stdin
     // 1 => stdout
     file: [Option<File>; 10],
@@ -97,6 +100,10 @@ impl Process {
         file[0] = Some(File::stdio());
         file[1] = Some(File::stdio());
         file
+    }
+
+    pub fn get_cwd(&self) -> Arc<Inode> {
+        fs::get_superblock().get_inode(self.cwd.unwrap())
     }
 
     pub fn get_file_desc_mut(&mut self, fd: usize) -> Result<&mut File, ()> {
@@ -237,6 +244,7 @@ pub fn init_first(user_entry: usize) {
         page_tb,
         child: Vec::new(),
         channel: None,
+        cwd: None,
         file: Process::default_file_dec(),
     };
 
@@ -257,6 +265,8 @@ pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, ()> {
     let prog_header_table = elf::read_program_header_table(&program, file_header);
 
     let proc = current();
+
+    proc.cwd = Some(file.inode.parent);
 
     let mut page_tb = PageTable::new();
 
@@ -396,6 +406,7 @@ pub fn fork() -> Result<usize, ()> {
         page_tb,
         child: Vec::new(),
         channel: None,
+        cwd: proc.cwd.clone(),
         // FIXME
         file: Process::default_file_dec(),
     };

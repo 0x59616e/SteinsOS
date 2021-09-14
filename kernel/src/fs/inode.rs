@@ -7,8 +7,9 @@ const INODE_TYPE_FILE: u8 = 1;
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct Inode {
-    pub ty:  u8,             // 0 is directory, 1 is file
+    pub ty:  u8,             // 0 is directory, 1 is file, 2 is device
     pub num: u32,            // inode number
+    pub parent: u32,             // parent inode
     pub size: u32,           // file size
     pub addr: [u32; 12 + 1], // block number
 }

@@ -38,7 +38,7 @@ fn main() {
     // block 53~: data block
 
     let superblock = Superblock {
-        inode_count: INODE_COUNT,
+        root_inode: 1,
         inode_bitmap:  51,
         data_block_bitmap: 52,
     };
@@ -50,6 +50,7 @@ fn main() {
     let mut root_inode = Inode {
         ty: 0,
         num: 1,
+        parent: 1,
         size: 0,      // unknown
         addr: [FIRST_DATA_BLOCK, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     };
@@ -94,6 +95,7 @@ fn main() {
         let inode = Inode {
             ty: 1,
             num: inode_curr,
+            parent: 1,
             size: contents.len() as u32,
             addr,
         };
@@ -114,7 +116,7 @@ fn main() {
                                         .fold(0_usize, |acc, x| acc + x.len() / 1024 + (x.len() % 1024 != 0) as usize);
 
     assert!(inodes.len() <= INODE_COUNT as usize);
-    inodes.resize(INODE_COUNT as usize, Inode { ty: 0, num: 0, size: 0, addr:[0; 13] });
+    inodes.resize(INODE_COUNT as usize, Inode { ty: 0, num: 0, parent: 0, size: 0, addr:[0; 13] });
 
     assert!(data_blocks.len() <= DATA_BLOCK_COUNT);
     data_blocks.resize(DATA_BLOCK_COUNT, vec![0_u8; BLOCK_SIZE]);

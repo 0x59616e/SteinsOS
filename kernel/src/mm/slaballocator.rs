@@ -49,7 +49,7 @@ pub struct SlabAllocator;
 
 impl SlabAllocator {
     fn get_size_and_index(size: usize) -> (usize, usize) {
-        let size = (size.next_power_of_two() + MINIMUM_SLAB_SIZE - 1) & !(MINIMUM_SLAB_SIZE - 1);
+        let size = round_up_with(size.next_power_of_two(), MINIMUM_SLAB_SIZE);
         let idx = (size >> MINIMUM_SLAB_SIZE_SHIFT).trailing_zeros() as usize;
         (size, idx)
     }
@@ -57,8 +57,6 @@ impl SlabAllocator {
 
 unsafe impl GlobalAlloc for SlabAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // println!("Slab: {} bytes", layout.size());
-
         if layout.size() > MAXIMUM_SLAB_SIZE {
             return BuddyAllocator.alloc(layout);
         }
