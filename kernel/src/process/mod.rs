@@ -105,17 +105,17 @@ impl Process {
         fs::get_superblock().get_inode(self.cwd.unwrap())
     }
 
-    pub fn get_file_desc_mut(&mut self, fd: usize) -> Result<&mut File, ()> {
+    pub fn get_file_desc_mut(&mut self, fd: usize) -> Result<&mut File, isize> {
         if fd >= 5 {
-            return Err(());
+            return Err(-1);
         }
-        self.file[fd].as_mut().ok_or(())
+        self.file[fd].as_mut().ok_or(-1)
     }
 
-    pub fn insert_file_desc(&mut self, file: File) -> Result<usize, ()> {
+    pub fn insert_file_desc(&mut self, file: File) -> Result<usize, isize> {
         let res = self.file.iter_mut()
                             .enumerate()
-                            .find(|(_, desc)| desc.is_none()).ok_or(())?;
+                            .find(|(_, desc)| desc.is_none()).ok_or(-1_isize)?;
         *res.1 = Some(file);
         Ok(res.0)
     }
@@ -154,7 +154,7 @@ pub fn put_user_input(c: u8) {
     }
 }
 
-pub fn get_user_input(buf: &mut [u8]) -> Result<usize, ()> {
+pub fn get_user_input(buf: &mut [u8]) -> Result<usize, isize> {
     let (buffer, waiting_list) = unsafe {
         USER_INPUT.assume_init_mut()
     };
@@ -173,11 +173,11 @@ pub fn get_user_input(buf: &mut [u8]) -> Result<usize, ()> {
                     // backspace
                     if len > 0 {
                         len -= 1;
-                        *(buf.get_mut(len).ok_or(())?) = 0;
+                        *(buf.get_mut(len).ok_or(-1_isize)?) = 0;
                     }
                 }
                 _ => {
-                    *(buf.get_mut(len).ok_or(())?) = c;
+                    *(buf.get_mut(len).ok_or(-1_isize)?) = c;
                     len += 1;
                 }
             }
@@ -253,7 +253,7 @@ pub fn init_first(user_entry: usize) {
     }
 }
 
-pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, ()> {
+pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, isize> {
     let mut file = crate::fs::open(path, crate::fs::FLAGS_O_RDONLY)?;
     let mut program = Vec::new();
     program.resize(file.size(), 0);
@@ -345,7 +345,7 @@ pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, ()> {
     return Ok(argc);
 }
 
-pub fn fork() -> Result<usize, ()> {
+pub fn fork() -> Result<usize, isize> {
     let proc = current();
 
     let mut page_tb = PageTable::new();
@@ -417,11 +417,11 @@ pub fn fork() -> Result<usize, ()> {
     Ok(pid as usize)
 }
 
-pub fn wait(pid: u8) -> Result<usize, ()> {
+pub fn wait(pid: u8) -> Result<usize, isize> {
     // must be child process
     let proc = current();
     if !proc.child.iter().any(|child| *child == pid) {
-        return Err(())
+        return Err(-1)
     }
 
     let mut child = unsafe {
@@ -472,10 +472,10 @@ pub fn wakeup(channel: usize) {
     }
 }
 
-pub fn sbrk(inc: isize) -> Result<usize, ()> {
+pub fn sbrk(inc: isize) -> Result<usize, isize> {
     let proc = current();
     if inc < 0 || proc.heap_end + inc as usize - proc.heap_start > Process::USER_HEAP_SIZE_LIMIT {
-        return Ok(0);
+        return Err(0);
     } else {
         let ret = Ok(proc.heap_end);
         proc.heap_end += inc as usize;
@@ -483,7 +483,7 @@ pub fn sbrk(inc: isize) -> Result<usize, ()> {
     }
 }
 
-pub fn get_cwd(buf: &mut [u8]) -> Result<usize, ()> {
+pub fn get_cwd(buf: &mut [u8]) -> Result<usize, isize> {
     let mut cwd = current().get_cwd();
     let sb = fs::get_superblock();
 
@@ -503,7 +503,7 @@ pub fn get_cwd(buf: &mut [u8]) -> Result<usize, ()> {
     path.push_front(b'/');
     let len = path.len();
     if len + 1 /* null-terminated*/ > buf.len() {
-        return Ok(0);
+        return Err(0);
     }
 
     buf[len] = 0;

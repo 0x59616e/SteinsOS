@@ -37,16 +37,16 @@ impl File {
         }
     }
 
-    pub fn write(&mut self, s: &str) -> Result<usize, ()> {
+    pub fn write(&mut self, s: &str) -> Result<usize, isize> {
         if self.flags & FLAGS_O_RDONLY != 0 {
-            return Err(());
+            return Err(-1);
         }
         self.op.write(self.inode, &mut self.pos, s)
     }
 
-    pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, ()> {
+    pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, isize> {
         if self.flags & FLAGS_O_WRONLY != 0 {
-            return Err(());
+            return Err(-1);
         }
         self.op.read(self.inode, &mut self.pos, buf)
     }
@@ -61,11 +61,11 @@ pub struct DiskFile;
 pub struct Stdio;
 
 impl FileOperation for DiskFile {
-    fn write(&self, _: Option<&Inode>, _: &mut usize, _: &str) -> Result<usize, ()> {
+    fn write(&self, _: Option<&Inode>, _: &mut usize, _: &str) -> Result<usize, isize> {
         unimplemented!()
     }
 
-    fn read(&mut self, inode: Option<&Inode>, offset: &mut usize, buf: &mut [u8]) -> Result<usize, ()> {
+    fn read(&mut self, inode: Option<&Inode>, offset: &mut usize, buf: &mut [u8]) -> Result<usize, isize> {
         let inode = inode.expect("No inode");
         assert!(*offset as u32 <= inode.size);
         if *offset as u32 == inode.size {
@@ -78,7 +78,7 @@ impl FileOperation for DiskFile {
         let mut buf_curr = 0;
 
         for i in (start / BLOCK_SIZE)..(round_up_with(end, BLOCK_SIZE) / BLOCK_SIZE) {
-            let data = inode.get_data(i).ok_or(())?;
+            let data = inode.get_data(i).ok_or(-1_isize)?;
             let next = core::cmp::min((curr & !1023) + 1024, end);
             let len = next - curr;
             buf[buf_curr..(buf_curr + len)]
@@ -92,12 +92,12 @@ impl FileOperation for DiskFile {
 }
 
 impl FileOperation for Stdio {
-    fn write(&self, _: Option<&Inode>, _: &mut usize, s: &str) -> Result<usize, ()> {
+    fn write(&self, _: Option<&Inode>, _: &mut usize, s: &str) -> Result<usize, isize> {
         print!("{}", s);
         Ok(s.len())
     }
 
-    fn read(&mut self, _: Option<&Inode>, _: &mut usize, buf: &mut [u8]) -> Result<usize, ()> {
+    fn read(&mut self, _: Option<&Inode>, _: &mut usize, buf: &mut [u8]) -> Result<usize, isize> {
         process::get_user_input(buf)
     }
 }
@@ -107,10 +107,10 @@ pub trait FileOperation {
             inode: Option<&Inode>,
             offset: &mut usize,
             _: &str
-        ) -> Result<usize, ()>;
+        ) -> Result<usize, isize>;
     fn read(&mut self,
             inode: Option<&Inode>,
             offset: &mut usize,
             buf: &mut [u8]
-        ) -> Result<usize, ()>;
+        ) -> Result<usize, isize>;
 }

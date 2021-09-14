@@ -24,7 +24,7 @@ extern "C" fn handle_sync(uctx: &mut UserContext, es: usize, fa: usize) {
     match es >> 26 {
         0b010101 => {
             uctx.x[0] = crate::syscall::SYSCALL_TABLE[es & 0xffff](uctx)
-                                .unwrap_or(-1_isize as usize);
+                                .unwrap_or_else(|err| err as usize);
         }
         0b100100 => {
             page_fault_handler(es, fa, uctx.elr_el1);

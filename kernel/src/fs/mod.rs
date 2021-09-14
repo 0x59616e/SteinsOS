@@ -28,7 +28,7 @@ pub fn get_superblock() -> &'static Superblock {
     }
 }
 
-pub fn open(path: &[u8], flags: usize) -> Result<File, ()> {
+pub fn open(path: &[u8], flags: usize) -> Result<File, isize> {
     let superblock = get_superblock();
 
     let path = core::str::from_utf8(path).unwrap();
@@ -43,7 +43,7 @@ pub fn open(path: &[u8], flags: usize) -> Result<File, ()> {
 
     for name in path.split('/').filter(|name| name.len() > 0) {
         if inode.is_file() {
-            return Err(());
+            return Err(-1);
         }
 
         for entry in inode.dirent() {
@@ -55,16 +55,16 @@ pub fn open(path: &[u8], flags: usize) -> Result<File, ()> {
     }
 
     if inode.is_dir() && (flags & FLAGS_O_DIRECTORY) == 0 {
-        return Err(());
+        return Err(-1);
     }
 
     Ok(File::new(inode, flags))
 }
 
-pub fn read(file: &mut File, buf: &mut [u8]) -> Result<usize, ()> {
+pub fn read(file: &mut File, buf: &mut [u8]) -> Result<usize, isize> {
     file.read(buf)
 }
 
-pub fn write(file: &mut File, s: &str) -> Result<usize, ()> {
+pub fn write(file: &mut File, s: &str) -> Result<usize, isize> {
    file.write(s)
 }

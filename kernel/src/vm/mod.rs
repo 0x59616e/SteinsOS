@@ -311,7 +311,7 @@ impl PageTable {
         PageTable::from(addr).install(va, pa, kind, perm, level + 1, block);
     }
 
-    pub fn create(&mut self, va: usize, len: usize, perm: &str) -> Result<usize, ()> {
+    pub fn create(&mut self, va: usize, len: usize, perm: &str) -> Result<usize, isize> {
         assert_eq!(va & 0xfff, 0);
         assert_eq!(len & 0xfff, 0);
         let ptr = unsafe {
@@ -319,7 +319,7 @@ impl PageTable {
         };
 
         if ptr.is_null() {
-            return Err(());
+            return Err(-1);
         }
 
         self.map(va, ptr as usize, len, PageTableKind::User, perm);
