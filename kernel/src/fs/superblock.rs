@@ -5,8 +5,7 @@ use super::buffer::Buffer;
 #[derive(Clone, Copy)]
 pub struct Superblock {
     root_inode: u32,
-    inode_bitmap:  u32,
-    data_block_bitmap: u32,
+    bitmap_block: u32,
 }
 
 impl Superblock {

@@ -25,23 +25,22 @@ fn to_block<T>(src: &T) ->  Vec<u8> {
     v
 }
 
-const INODE_COUNT: u32 = 50;
 const DATA_BLOCK_COUNT: usize = 1000;
-const FIRST_INODE_BLOCK: u32 = 1;
-const FIRST_DATA_BLOCK: u32 = 53;
+const BITMAP_BLOCK: u32 = 1;
+const ROOT_INODE_BLOCK: u32 = 2;
 
 fn main() {
     // block 0: superblock
-    // block 1 ~ 50: inode
-    // block 51: inode bitmap
-    // block 52: data block bitmpa
-    // block 53~: data block
+    // block 1: bitmap
+    // block 2: root inode
+    // block 3~: data block
 
     let superblock = Superblock {
-        root_inode: 1,
-        inode_bitmap:  51,
-        data_block_bitmap: 52,
+        root_inode: ROOT_INODE_BLOCK,
+        bitmap_block: BITMAP_BLOCK,
     };
+
+    let inode_count = env::args().count() as u32;
 
     let mut result = Vec::<u8>::new();
     result.append(&mut to_block(&superblock));
@@ -49,14 +48,14 @@ fn main() {
     let mut root_block = Vec::<u8>::new();
     let mut root_inode = Inode {
         ty: 0,
-        num: 1,
-        parent: 1,
+        num: ROOT_INODE_BLOCK,
+        parent: ROOT_INODE_BLOCK,
         size: 0,      // unknown
-        addr: [FIRST_DATA_BLOCK, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        addr: [inode_count + 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     };
 
     // current directory
-    root_block.extend_from_slice(as_u8(&FIRST_INODE_BLOCK));
+    root_block.extend_from_slice(as_u8(&ROOT_INODE_BLOCK));
     root_block.extend_from_slice(&{
         let mut name = [0_u8; 12];
         name[0] = b'.';
@@ -66,8 +65,8 @@ fn main() {
     let mut data_blocks = Vec::<Vec<u8>>::new();
     let mut inodes = Vec::<Inode>::new();
 
-    let mut inode_curr: u32 = FIRST_INODE_BLOCK + 1;
-    let mut block_curr = FIRST_DATA_BLOCK + 1;
+    let mut inode_curr: u32 = ROOT_INODE_BLOCK + 1;
+    let mut block_curr = inode_count + 3;
 
     for prog in env::args().skip(1) {
         let mut prog_name = prog.split('/').last().unwrap().as_bytes().to_vec();
@@ -87,39 +86,45 @@ fn main() {
         let mut addr = [0_u32; 13];
         // round up to BLOCK_SIZE
         let block_cnt = ((contents.len() + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1)) / BLOCK_SIZE;
-        (0..block_cnt).for_each(|i| {
-            addr[i] = block_curr;
-            block_curr += 1;
-        });
+        if block_cnt < 13 {
+            (0..block_cnt).for_each(|i| {
+                addr[i] = block_curr;
+                block_curr += 1;
+            });
+        } else {
+            unimplemented!();
+        }
 
         let inode = Inode {
             ty: 1,
             num: inode_curr,
-            parent: 1,
+            parent: ROOT_INODE_BLOCK,
             size: contents.len() as u32,
             addr,
         };
 
-        println!("{:?}", inode);
+        // println!("{:?}", inode);
         inodes.push(inode);
         data_blocks.push(contents);
         inode_curr += 1;
     }
     root_inode.size = root_block.len() as u32;
-    println!("{:?}", root_inode);
+    // println!("{:?}", root_inode);
     assert!(root_block.len() <= BLOCK_SIZE);
     inodes.insert(0, root_inode);
     data_blocks.insert(0, root_block);
 
-    let inode_count = inodes.len();
     let data_block_count = data_blocks.iter()
                                         .fold(0_usize, |acc, x| acc + x.len() / 1024 + (x.len() % 1024 != 0) as usize);
 
-    assert!(inodes.len() <= INODE_COUNT as usize);
-    inodes.resize(INODE_COUNT as usize, Inode { ty: 0, num: 0, parent: 0, size: 0, addr:[0; 13] });
-
     assert!(data_blocks.len() <= DATA_BLOCK_COUNT);
     data_blocks.resize(DATA_BLOCK_COUNT, vec![0_u8; BLOCK_SIZE]);
+
+    // write data block bitmap
+    let mut bitmap = vec![0_u8; BLOCK_SIZE];
+    (0..(inode_count as usize + data_block_count + 2)).for_each(|i| bitmap[i / 8] |= 1 << (i % 8));
+    // println!("{:?}", bitmap);
+    result.append(&mut bitmap);
 
     // write inode
     inodes.into_iter().for_each(|inode| {
@@ -127,16 +132,8 @@ fn main() {
     });
 
 
-    println!("data_block_count = {}, inode_count = {}", data_block_count, inode_count);
-    // write inode bitmap
-    let mut bitmap = vec![0_u8; BLOCK_SIZE];
-    (1..=inode_count).for_each(|i| bitmap[i / 8] |= 1 << (i % 8));
-    result.append(&mut bitmap);
+    // println!("data_block_count = {}, inode_count = {}", data_block_count, inode_count);
 
-    // write data block bitmap
-    let mut bitmap = vec![0_u8; BLOCK_SIZE];
-    (0..data_block_count).for_each(|i| bitmap[i / 8] |= 1 << (i % 8));
-    result.append(&mut bitmap);
 
     // write data block
     data_blocks.into_iter().for_each(|mut data| {
