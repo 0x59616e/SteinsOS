@@ -9,7 +9,7 @@ const INODE_TYPE_FILE: u8 = 1;
 pub struct Inode {
     pub ty:  u8,             // 0 is directory, 1 is file, 2 is device
     pub num: u32,            // inode number
-    pub parent: u32,             // parent inode
+    pub parent: u32,         // parent inode
     pub size: u32,           // file size
     pub addr: [u32; 12 + 1], // block number
 }
@@ -82,5 +82,9 @@ impl Dirent {
 
     pub fn inode_num(&self) -> u32 {
         self.inode_num
+    }
+
+    pub fn name(&self) -> &[u8] {
+        &self.name
     }
 }

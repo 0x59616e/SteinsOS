@@ -133,3 +133,8 @@ int getdents(unsigned int fd, struct dirent *dirp, unsigned int count) {
 void *sbrk(size_t inc) {
     asm("svc " SYS_SBRK);
 }
+
+char *getcwd(char *buffer, size_t size)
+{
+    asm("svc " SYS_GETCWD);
+}

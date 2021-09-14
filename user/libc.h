@@ -8,6 +8,7 @@
 #define SYS_EXIT     "0x07"
 #define SYS_GETDENTS "0x08"
 #define SYS_SBRK     "0x09"
+#define SYS_GETCWD   "0x0A"
 
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1
@@ -41,6 +42,7 @@ int  read(int fd, void *buf, int count);
 int waitpid(int pid, int *wstatus);
 int getdents(unsigned int, struct dirent *, unsigned int);
 void *sbrk(size_t);
+char *getcwd(char *, size_t);
 
 
 // library

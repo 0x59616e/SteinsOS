@@ -483,6 +483,36 @@ pub fn sbrk(inc: isize) -> Result<usize, ()> {
     }
 }
 
+pub fn get_cwd(buf: &mut [u8]) -> Result<usize, ()> {
+    let mut cwd = current().get_cwd();
+    let sb = fs::get_superblock();
+
+    let mut path = VecDeque::<u8>::new();
+    while cwd.num != cwd.parent {
+        for entry in cwd.dirent() {
+            if entry.inode_num() == cwd.num {
+                // this is it
+                for c in entry.name().iter() {
+                    path.push_front(*c);
+                }
+                cwd = sb.get_inode(cwd.parent);
+                break;
+            }
+        }
+    }
+    path.push_front(b'/');
+    let len = path.len();
+    if len + 1 /* null-terminated*/ > buf.len() {
+        return Ok(0);
+    }
+
+    buf[len] = 0;
+
+    buf[..len].copy_from_slice(path.make_contiguous());
+
+    Ok(buf.as_ptr() as usize)
+}
+
 pub fn schedule() -> ! {
     loop {
         let list = unsafe {

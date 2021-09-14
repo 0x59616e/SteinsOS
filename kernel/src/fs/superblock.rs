@@ -1,10 +1,5 @@
 use super::inode::Inode;
 use super::buffer::Buffer;
-use alloc::collections::btree_map::BTreeMap;
-use core::mem::MaybeUninit;
-use alloc::string::String;
-
-static mut PATH_NAME:   MaybeUninit<BTreeMap<u32, String>> = MaybeUninit::uninit();
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -23,11 +18,5 @@ impl Superblock {
         unsafe {
             &*(Buffer::read(inode_num).get_data().as_ptr() as *const Inode)
         }
-    }
-}
-
-pub fn init() {
-    unsafe {
-        PATH_NAME = MaybeUninit::new(BTreeMap::new());
     }
 }

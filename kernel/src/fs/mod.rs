@@ -18,7 +18,6 @@ pub const FLAGS_O_DIRECTORY: usize = 8;
 
 pub fn init() {
     buffer::init();
-    superblock::init();
 }
 
 pub fn get_superblock() -> &'static Superblock {

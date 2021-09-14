@@ -25,7 +25,8 @@ USER_BASE=0xffff000000000000
 USER_PROG=\
 	shell \
 	ls    \
-	cat
+	cat   \
+	pwd
 
 CPUS=1
 QEMUOPTS=  -m 1G -smp $(CPUS) -semihosting -machine virt -cpu cortex-a57 -nographic -kernel steinsos.bin

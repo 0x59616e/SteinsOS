@@ -15,6 +15,7 @@ pub static SYSCALL_TABLE: &[fn(_: &mut UserContext) -> Result<usize, ()>] = &[
     sys_exit,     // 0x07
     sys_getdents, // 0x08
     sys_sbrk,     // 0x09
+    sys_getcwd,   // 0x0A
 ];
 
 fn string_len(ptr: *const u8) -> usize {
@@ -119,4 +120,15 @@ pub fn sys_sbrk(ctx: &mut UserContext) -> Result<usize, ()> {
     let inc = ctx.x[0];
     let result = process::sbrk(inc as isize);
     result
+}
+
+pub fn sys_getcwd(ctx: &mut UserContext) -> Result<usize, ()> {
+    let ptr = ctx.x[0] as *mut u8;
+    let len = ctx.x[1];
+
+    let buf = unsafe {
+        core::slice::from_raw_parts_mut(ptr, len)
+    };
+
+    process::get_cwd(buf)
 }
