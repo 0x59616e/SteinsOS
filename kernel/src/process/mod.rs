@@ -7,7 +7,6 @@ use crate::fs::file::*;
 use core::mem::MaybeUninit;
 use alloc::collections::vec_deque::VecDeque;
 use alloc::vec::Vec;
-use alloc::sync::Arc;
 use crate::fs::{self, inode::Inode};
 
 mod elf;
@@ -102,7 +101,7 @@ impl Process {
         file
     }
 
-    pub fn get_cwd(&self) -> Arc<Inode> {
+    pub fn get_cwd(&self) -> &Inode {
         fs::get_superblock().get_inode(self.cwd.unwrap())
     }
 
@@ -266,7 +265,7 @@ pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, ()> {
 
     let proc = current();
 
-    proc.cwd = Some(file.inode.parent);
+    proc.cwd = Some(file.inode.expect("No inode").parent);
 
     let mut page_tb = PageTable::new();
 

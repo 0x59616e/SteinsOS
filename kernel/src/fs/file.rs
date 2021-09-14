@@ -1,24 +1,23 @@
 use alloc::boxed::Box;
 use crate::print;
 use super::{*, inode::Inode};
-use alloc::sync::Arc;
 use crate::process;
 use crate::common::*;
 
 pub struct File {
     sz: usize,
     pos: usize,
-    pub inode: Arc<Inode>,
+    pub inode: Option<&'static Inode>,
     flags: usize,
     op: Box<dyn FileOperation>,
 }
 
 impl File {
-    pub fn new(inode: Arc<Inode>, flags: usize) -> Self {
+    pub fn new(inode: &'static Inode, flags: usize) -> Self {
         Self {
             sz: inode.size as usize,
             pos: 0,
-            inode,
+            inode: Some(inode),
             flags,
             op: Box::new(DiskFile),
         }
@@ -32,13 +31,7 @@ impl File {
         Self {
             sz: 0,
             pos: 0,
-            inode: Arc::new(Inode {
-                ty: 2, // device
-                num: 0,
-                parent: 0,
-                size: 0,
-                addr: [0; 13],
-            }),
+            inode: None,
             flags: FLAGS_O_RDWR,
             op: Box::new(Stdio),
         }
@@ -48,14 +41,14 @@ impl File {
         if self.flags & FLAGS_O_RDONLY != 0 {
             return Err(());
         }
-        self.op.write(&self.inode, &mut self.pos, s)
+        self.op.write(self.inode, &mut self.pos, s)
     }
 
     pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, ()> {
         if self.flags & FLAGS_O_WRONLY != 0 {
             return Err(());
         }
-        self.op.read(&self.inode, &mut self.pos, buf)
+        self.op.read(self.inode, &mut self.pos, buf)
     }
 
     pub fn flags(&self) -> usize {
@@ -68,11 +61,12 @@ pub struct DiskFile;
 pub struct Stdio;
 
 impl FileOperation for DiskFile {
-    fn write(&self, _: &Arc<Inode>, _: &mut usize, _: &str) -> Result<usize, ()> {
+    fn write(&self, _: Option<&Inode>, _: &mut usize, _: &str) -> Result<usize, ()> {
         unimplemented!()
     }
 
-    fn read(&mut self, inode: &Arc<Inode>, offset: &mut usize, buf: &mut [u8]) -> Result<usize, ()> {
+    fn read(&mut self, inode: Option<&Inode>, offset: &mut usize, buf: &mut [u8]) -> Result<usize, ()> {
+        let inode = inode.expect("No inode");
         assert!(*offset as u32 <= inode.size);
         if *offset as u32 == inode.size {
             return Ok(0);
@@ -98,24 +92,24 @@ impl FileOperation for DiskFile {
 }
 
 impl FileOperation for Stdio {
-    fn write(&self, _: &Arc<Inode>, _: &mut usize, s: &str) -> Result<usize, ()> {
+    fn write(&self, _: Option<&Inode>, _: &mut usize, s: &str) -> Result<usize, ()> {
         print!("{}", s);
         Ok(s.len())
     }
 
-    fn read(&mut self, _: &Arc<Inode>, _: &mut usize, buf: &mut [u8]) -> Result<usize, ()> {
+    fn read(&mut self, _: Option<&Inode>, _: &mut usize, buf: &mut [u8]) -> Result<usize, ()> {
         process::get_user_input(buf)
     }
 }
 
 pub trait FileOperation {
     fn write(&self,
-            inode: &Arc<Inode>,
+            inode: Option<&Inode>,
             offset: &mut usize,
             _: &str
         ) -> Result<usize, ()>;
     fn read(&mut self,
-            inode: &Arc<Inode>,
+            inode: Option<&Inode>,
             offset: &mut usize,
             buf: &mut [u8]
         ) -> Result<usize, ()>;

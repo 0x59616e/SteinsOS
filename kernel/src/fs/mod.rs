@@ -21,9 +21,11 @@ pub fn init() {
     superblock::init();
 }
 
-pub fn get_superblock() -> Superblock {
+pub fn get_superblock() -> &'static Superblock {
+    // FIXME: We can't modify superblock and inode if
+    //        immutable reference is used.
     unsafe {
-        (Buffer::read(0).get_data().as_ptr() as *const Superblock).read()
+        &*(Buffer::read(0).get_data().as_ptr() as *const Superblock)
     }
 }
 
