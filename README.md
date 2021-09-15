@@ -3,6 +3,16 @@ SteinsOS is an operating system featuring non-preemptive kernel targeting on sin
 
 It is buggy and still in progress. My current goal is to make it more stable and add some tests.
 
+SteinOS is derived from following tutorials and software distributions:
+
+[Redox OS](https://gitlab.redox-os.org/redox-os/redox): The state-of-the-art Rust Operating System.
+
+[RISC Vに従うCPUの上で動作するOSをRustで書く（CPU実験余興](https://moraprogramming.hateblo.jp/entry/2019/03/17/165802):
+Very useful blog about Rust bare-metal programming.
+
+[Writing an OS in Rust](https://os.phil-opp.com/): An excellent series about kernel dev with Rust.
+
+[xv6](https://github.com/mit-pdos/xv6-riscv): An Unix-like OS written in C.
 # Document
 Below are SteinsOS docuements, one in Taiwanese, and the other in English.
 
