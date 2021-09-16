@@ -1,6 +1,5 @@
 use crate::exception::UserContext;
-use crate::fs;
-use crate::fs::FLAGS_O_DIRECTORY;
+use crate::fs::{self, file::File, FLAGS_O_DIRECTORY};
 use crate::process;
 use alloc::vec::Vec;
 
@@ -16,6 +15,8 @@ pub static SYSCALL_TABLE: &[fn(_: &mut UserContext) -> Result<usize, isize>] = &
     sys_getdents, // 0x08
     sys_sbrk,     // 0x09
     sys_getcwd,   // 0x0A
+    sys_mkdir,    // 0x0B
+    sys_chdir,    // 0x0C
 ];
 
 fn string_len(ptr: *const u8) -> usize {
@@ -65,9 +66,9 @@ pub fn sys_open(ctx: &mut UserContext) -> Result<usize, isize> {
     };
 
     let flags = ctx.x[1];
-    let file = fs::open(pathname, flags)?;
+    let inode = fs::open(pathname, flags)?;
 
-    process::current().insert_file_desc(file)
+    process::current().insert_file_desc(File::new(inode, flags))
 }
 
 pub fn sys_read(ctx: &mut UserContext) -> Result<usize, isize> {
@@ -86,7 +87,7 @@ pub fn sys_write(ctx: &mut UserContext) -> Result<usize, isize> {
     let len = ctx.x[2] as usize;
 
     unsafe {
-        fs::write(file, core::str::from_utf8_unchecked(core::slice::from_raw_parts(ptr, len)))
+        fs::write(file, core::slice::from_raw_parts(ptr, len))
     }
 }
 
@@ -131,4 +132,22 @@ pub fn sys_getcwd(ctx: &mut UserContext) -> Result<usize, isize> {
     };
 
     process::get_cwd(buf)
+}
+
+pub fn sys_mkdir(ctx: &mut UserContext) -> Result<usize, isize> {
+    let path = unsafe {
+        let ptr = ctx.x[0] as *const u8;
+        core::slice::from_raw_parts(ptr, string_len(ptr))
+    };
+
+    fs::mkdir(path)
+}
+
+pub fn sys_chdir(ctx: &mut UserContext) -> Result<usize, isize> {
+    let path = unsafe {
+        let ptr = ctx.x[0] as *const u8;
+        core::slice::from_raw_parts(ptr, string_len(ptr))
+    };
+
+    process::chdir(path)
 }

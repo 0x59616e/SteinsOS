@@ -101,8 +101,12 @@ impl Process {
         file
     }
 
-    pub fn get_cwd(&self) -> &Inode {
-        fs::get_superblock().get_inode(self.cwd.unwrap())
+    pub unsafe fn get_cwd(&mut self) -> &mut Inode {
+        fs::get_inode(self.cwd.unwrap())
+    }
+
+    pub fn chdir(&mut self, dir: u32) {
+        self.cwd = Some(dir);
     }
 
     pub fn get_file_desc_mut(&mut self, fd: usize) -> Result<&mut File, isize> {
@@ -254,10 +258,10 @@ pub fn init_first(user_entry: usize) {
 }
 
 pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, isize> {
-    let mut file = crate::fs::open(path, crate::fs::FLAGS_O_RDONLY)?;
+    let mut inode = crate::fs::open(path, crate::fs::FLAGS_O_RDONLY)?;
     let mut program = Vec::new();
-    program.resize(file.size(), 0);
-    file.read(&mut program)?;
+    program.resize(inode.size() as usize, 0);
+    inode.read(&mut 0, &mut program)?;
 
     let file_header = elf::read_fileheader(&program);
 
@@ -265,7 +269,7 @@ pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, isize> {
 
     let proc = current();
 
-    proc.cwd = Some(file.inode.expect("No inode").parent);
+    proc.cwd = Some(inode.parent);
 
     let mut page_tb = PageTable::new();
 
@@ -484,8 +488,9 @@ pub fn sbrk(inc: isize) -> Result<usize, isize> {
 }
 
 pub fn get_cwd(buf: &mut [u8]) -> Result<usize, isize> {
-    let mut cwd = current().get_cwd();
-    let sb = fs::get_superblock();
+    let mut cwd = unsafe {
+        current().get_cwd()
+    };
 
     let mut path = VecDeque::<u8>::new();
     while cwd.num != cwd.parent {
@@ -495,7 +500,9 @@ pub fn get_cwd(buf: &mut [u8]) -> Result<usize, isize> {
                 for c in entry.name().iter() {
                     path.push_front(*c);
                 }
-                cwd = sb.get_inode(cwd.parent);
+                cwd = unsafe {
+                    fs::get_inode(cwd.parent)
+                };
                 break;
             }
         }
@@ -513,14 +520,19 @@ pub fn get_cwd(buf: &mut [u8]) -> Result<usize, isize> {
     Ok(buf.as_ptr() as usize)
 }
 
+pub fn chdir(path: &[u8]) -> Result<usize, isize> {
+    let inode = fs::path_lookup(core::str::from_utf8(path).unwrap())?.num;
+    current().chdir(inode);
+    Ok(0)
+}
+
 pub fn schedule() -> ! {
     loop {
         let list = unsafe {
             &mut PROCESS_LIST
         };
 
-        for i in 0..20 {
-            let ptr = list[i];
+        for ptr in list.iter_mut().map(|p| *p) {
             clear_current();
 
             if ptr.is_null() {

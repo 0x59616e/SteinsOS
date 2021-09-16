@@ -219,7 +219,7 @@ pub unsafe fn disk_rw(buffer: &mut Buffer, write: bool) {
     desc[idx[0]].flags = VRING_DESC_F_NEXT;
     desc[idx[0]].next = idx[1] as u16;
 
-    let ptr = buffer.get_data().as_ptr() as u64;
+    let ptr = buffer.as_ptr() as u64;
     desc[idx[1]].addr = ptr;
     desc[idx[1]].len = crate::fs::BLOCK_SIZE as u32;
     desc[idx[1]].flags = match write {
@@ -235,7 +235,7 @@ pub unsafe fn disk_rw(buffer: &mut Buffer, write: bool) {
     desc[idx[2]].next = 0;
 
     DISK.info[idx[0]].buf = core::ptr::addr_of_mut!(*buffer);
-    (*buffer).disk = true;
+    (*buffer).busy = true;
 
     DISK.avail().ring[DISK.avail().idx as usize % NUM as usize] = idx[0] as u16;
     mb!();
@@ -244,8 +244,8 @@ pub unsafe fn disk_rw(buffer: &mut Buffer, write: bool) {
     VirtIO::new(0).write(QUEUE_NOTIFY, 0);
     mb!();
 
-    while (*DISK.info[idx[0]].buf).disk {
-        process::sleep((*DISK.info[idx[0]].buf).get_data().as_ptr() as usize);
+    while (*DISK.info[idx[0]].buf).busy {
+        process::sleep((*DISK.info[idx[0]].buf).as_ptr() as usize);
     }
 
     DISK.info[idx[0]].buf = core::ptr::null_mut();
@@ -265,8 +265,8 @@ pub unsafe fn interrupt_handler() {
             panic!("virtio disk intr status {}", DISK.info[id].status);
         }
 
-        (*DISK.info[id].buf).disk = false;
-        process::wakeup((*DISK.info[id].buf).get_data().as_ptr() as usize);
+        (*DISK.info[id].buf).busy = false;
+        process::wakeup((*DISK.info[id].buf).as_ptr() as usize);
 
         DISK.used_idx += 1;
     }
