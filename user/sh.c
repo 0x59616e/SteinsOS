@@ -13,6 +13,15 @@ int main()
             if(cmd[0] == '\0')
                 continue;
 
+            if(cmd[0] == 'c' && cmd[1] == 'd' && cmd[2] == ' ') {
+                // change working directory
+                char *path = cmd + 3;
+                if (chdir(path) == -1) {
+                    printf("Can't change directory to %s\n", path);
+                }
+                continue;
+            }
+
             int pid = fork();
 
             if (pid == 0) {

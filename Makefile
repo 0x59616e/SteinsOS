@@ -22,11 +22,11 @@ LIB=steinsos
 USER_LIB_DIR=$(SLIBC_DIR)/target/aarch64-unknown-none/debug/
 USER_SOURCE=$(wildcard $(USER_DIR)/*.c)
 USER_BASE=0xffff000000000000
-USER_PROG=\
-	shell \
-	ls    \
-	cat   \
-	pwd
+USER_PROG= \
+	sh     \
+	ls     \
+	cat    \
+	pwd    \
 
 CPUS=1
 QEMUOPTS=  -m 1G -smp $(CPUS) -semihosting -machine virt -cpu cortex-a57 -nographic -kernel steinsos.bin

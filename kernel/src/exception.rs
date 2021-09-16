@@ -77,7 +77,11 @@ extern "C" fn page_fault_handler(es: usize, fault_addr: usize, elr: usize) {
                         .expect("Can't handle page fault");
     } else {
         // FIXME: Segmentation fault ?
-        panic!("page fault: from: 0b{:b}\n fault addr: 0x{:x}\n at: 0x{:x}", es >> 26, fault_addr, elr);
+        panic!("page fault: from: {}\n fault addr: 0x{:x}\n at: 0x{:x}", match es >> 26 {
+            0b100100 => "user",
+            0b100101 => "kernel",
+            _ => "???",
+        }, fault_addr, elr);
     }
 }
 

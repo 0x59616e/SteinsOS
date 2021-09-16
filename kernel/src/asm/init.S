@@ -19,6 +19,6 @@ init_main:
 loop:
     b .
 
-path: .asciz "/shell"
+path: .asciz "/sh"
 err:  .asciz "start shell failed\n"
 msg:  .asciz "starting shell...\n"
