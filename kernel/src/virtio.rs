@@ -306,15 +306,15 @@ impl Disk {
         }
     }
 
-    unsafe fn desc(&self) -> &mut [VirtqDesc] {
+    unsafe fn desc(&mut self) -> &mut [VirtqDesc] {
         &mut *(self.addr as *mut VirtqDesc as *mut [VirtqDesc; NUM as usize])
     }
 
-    unsafe fn avail(&self) -> &mut VirtqAvail {
+    unsafe fn avail(&mut self) -> &mut VirtqAvail {
         &mut *((self.addr + NUM as usize * mem::size_of::<VirtqDesc>()) as *mut VirtqAvail)
     }
 
-    unsafe fn used(&self) -> &mut VirtqUsed {
+    unsafe fn used(&mut self) -> &mut VirtqUsed {
         &mut *((self. addr + 0x1000) as *mut VirtqUsed)
     }
 }

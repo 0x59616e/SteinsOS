@@ -67,5 +67,5 @@ pub fn panic(info: &core::panic::PanicInfo) -> ! {
 
 #[alloc_error_handler]
 fn on_oom(_layout: core::alloc::Layout) -> ! {
-    loop {}
+    panic!("oom");
 }

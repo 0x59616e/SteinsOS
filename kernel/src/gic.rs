@@ -108,8 +108,7 @@ impl GicDistIf {
     // }
 
     unsafe fn read(&self, reg: u32) -> u32 {
-        let val = core::ptr::read_volatile((self.address + reg as usize) as *const u32);
-        val
+        core::ptr::read_volatile((self.address + reg as usize) as *const u32)
     }
 
     unsafe fn write(&mut self, reg: u32, value: u32) {

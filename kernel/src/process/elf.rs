@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct FileHeader {
@@ -49,7 +47,7 @@ impl ProgramHeader {
     }
 }
 
-pub fn read_fileheader(prog: &Vec<u8>) -> &FileHeader {
+pub fn read_fileheader(prog: &[u8]) -> &FileHeader {
     let file_header = unsafe {
         &*(prog.as_ptr() as *const FileHeader)
     };
@@ -59,7 +57,7 @@ pub fn read_fileheader(prog: &Vec<u8>) -> &FileHeader {
 }
 
 pub fn read_program_header_table<'a>(
-    prog: &'a Vec<u8>,
+    prog: &'a [u8],
     file_header: &FileHeader
 ) -> &'a [ProgramHeader] {
     let ptr = unsafe {

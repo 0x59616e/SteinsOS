@@ -84,7 +84,7 @@ impl SerialPort {
 
     pub const fn new_inner(base: usize) -> SerialPort {
         SerialPort {
-            base: base,
+            base,
             data_reg: 0x00,
             rcv_stat_reg: 0x04,
             flag_reg: 0x18,

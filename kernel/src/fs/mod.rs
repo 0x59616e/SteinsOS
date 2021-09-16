@@ -50,7 +50,7 @@ pub fn path_lookup(path: &str) -> Result<&'static mut Inode, isize>{
         }
     };
 
-    for name in path.split('/').filter(|name| name.len() > 0) {
+    for name in path.split('/').filter(|name| !name.is_empty()) {
         if inode.is_file() {
             return Err(-1);
         }

@@ -42,7 +42,7 @@ extern "C" fn handle_sync(uctx: &mut UserContext, es: usize, fa: usize) {
 extern "C" fn handle_int(irq: u32) {
     match irq {
         30 => unsafe {
-                let x = 1000_000_usize;
+                let x = 1_000_000_usize;
                 asm!("msr CNTP_TVAL_EL0, {}", in(reg) x);
                 ((GICCBASE + 0x10) as *mut u32).write(irq);
                 // context switch

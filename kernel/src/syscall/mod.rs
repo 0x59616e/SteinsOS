@@ -3,7 +3,9 @@ use crate::fs::{self, file::File, FLAGS_O_DIRECTORY};
 use crate::process;
 use alloc::vec::Vec;
 
-pub static SYSCALL_TABLE: &[fn(_: &mut UserContext) -> Result<usize, isize>] = &[
+type SyscallFnType = fn(_: &mut UserContext) -> Result<usize, isize>;
+
+pub static SYSCALL_TABLE: &[SyscallFnType] = &[
     sys_fork,     // 0x00
     sys_exec,     // 0x01
     sys_open,     // 0x02
@@ -119,8 +121,7 @@ pub fn sys_getdents(ctx: &mut UserContext) -> Result<usize, isize> {
 
 pub fn sys_sbrk(ctx: &mut UserContext) -> Result<usize, isize> {
     let inc = ctx.x[0];
-    let result = process::sbrk(inc as isize);
-    result
+    process::sbrk(inc as isize)
 }
 
 pub fn sys_getcwd(ctx: &mut UserContext) -> Result<usize, isize> {

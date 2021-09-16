@@ -23,7 +23,7 @@ impl Inode {
     }
 
     pub fn dirent(&self) -> DirentIter {
-        DirentIter { offset: 0, inode: &self }
+        DirentIter { offset: 0, inode: self }
     }
 
     pub fn iter(&self) -> InodeDataIter {

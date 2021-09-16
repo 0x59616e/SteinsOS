@@ -99,8 +99,7 @@ unsafe impl GlobalAlloc for BuddyAllocator {
 
         let sz = round_up(layout.size());
 
-        let ptr = self.alloc_pages(sz >> PAGESHIFT);
-        ptr
+        self.alloc_pages(sz >> PAGESHIFT)
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {

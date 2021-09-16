@@ -125,10 +125,7 @@ impl Process {
     }
 
     fn is_waiting_on(&self, channel: usize) -> bool {
-        match self.channel {
-            Some(ch) if ch == channel => true,
-            _ => false,
-        }
+       matches!(self.channel, Some(ch) if ch == channel)
     }
 
     pub fn wakeup(&mut self) {
@@ -269,7 +266,7 @@ pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, isize> {
 
     let proc = current();
 
-    if let None = proc.cwd {
+    if proc.cwd.is_none() {
         proc.cwd = Some(inode.parent)
     }
 
@@ -348,7 +345,7 @@ pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, isize> {
         asm!("msr sp_el0, {}", in(reg) argv);
         (*user_ctx).x[1] = argv;
     }
-    return Ok(argc);
+    Ok(argc)
 }
 
 pub fn fork() -> Result<usize, isize> {
@@ -471,7 +468,7 @@ pub fn wakeup(channel: usize) {
         &mut PROCESS_LIST
     };
 
-    for proc in list.into_iter().filter(|ptr| !ptr.is_null()).map(|ptr| unsafe{&mut **ptr}) {
+    for proc in list.iter_mut().filter(|ptr| !ptr.is_null()).map(|ptr| unsafe{&mut **ptr}) {
         if proc.is_waiting_on(channel) {
             proc.wakeup();
         }
@@ -481,7 +478,7 @@ pub fn wakeup(channel: usize) {
 pub fn sbrk(inc: isize) -> Result<usize, isize> {
     let proc = current();
     if inc < 0 || proc.heap_end + inc as usize - proc.heap_start > Process::USER_HEAP_SIZE_LIMIT {
-        return Err(0);
+        Err(0)
     } else {
         let ret = Ok(proc.heap_end);
         proc.heap_end += inc as usize;
@@ -510,15 +507,14 @@ pub fn get_cwd(buf: &mut [u8]) -> Result<usize, isize> {
         }
     }
 
-    let path = &[b'/'].iter()
+    let path = [b'/'].iter()
                         .copied()
                         .chain(path.into_iter()
                                     .intersperse(&[b'/'])
                                     .flatten()
-                                    .filter(|c| **c != 0)
                                     .copied()
+                                    .filter(|c| *c != 0)
                         ).collect::<Vec<u8>>();
-
     let len = path.len();
     if len + 1 /* null-terminated */ > buf.len() {
         return Err(0);
@@ -605,6 +601,6 @@ pub fn current() -> &'static mut Process {
     }
 
     unsafe {
-        return &mut *(addr as *mut Process);
+        (addr as *mut Process).as_mut().unwrap()
     }
 }
