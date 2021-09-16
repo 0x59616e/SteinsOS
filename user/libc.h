@@ -9,6 +9,8 @@
 #define SYS_GETDENTS "0x08"
 #define SYS_SBRK     "0x09"
 #define SYS_GETCWD   "0x0A"
+#define SYS_MKDIR    "0x0B"
+#define SYS_CHDIR    "0x0C"
 
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1
@@ -43,6 +45,8 @@ int waitpid(int pid, int *wstatus);
 int getdents(unsigned int, struct dirent *, unsigned int);
 void *sbrk(size_t);
 char *getcwd(char *, size_t);
+int mkdir(char *);
+int chdir(char *);
 
 
 // library

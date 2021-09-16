@@ -30,6 +30,15 @@ int waitpid(int pid, int *wstatus)
     asm("svc " SYS_WAITPID);
 }
 
+int mkdir(char *path)
+{
+    asm("svc " SYS_MKDIR);
+}
+
+int chdir(char *path) {
+    asm("svc " SYS_CHDIR);
+}
+
 char *fgets(char *s, int size, int fd)
 {
     int len = read(fd, s, size - 1);
