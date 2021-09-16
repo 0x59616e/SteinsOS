@@ -43,7 +43,13 @@ int main()
                 char *pathname = argv[0];
 
                 exec(pathname, argv);
-                printf("%s: No such file or directory\n", cmd);
+                char new_path[32] = {NULL};
+                new_path[0] = '/';
+                for (int i = 0; pathname[i] != '\0'; i++) {
+                    new_path[i + 1] = pathname[i];
+                }
+                exec(new_path, argv);
+                printf("%s: No such file or directory\n", pathname);
                 return -1;
             }
 

@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(iter_intersperse)]
 #![feature(asm)]
 #![feature(alloc_error_handler)]
 

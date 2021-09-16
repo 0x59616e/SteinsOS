@@ -22,7 +22,7 @@ void *malloc(size_t size)
     while (runner->next != NULL) {
         if (runner->next->size >= size) {
             // we use first-fit strategy
-            *res = (int *)runner->next;
+            res = (int *)runner->next;
             runner->next = runner->next->next;
             break;
         }

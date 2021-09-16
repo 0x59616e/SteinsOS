@@ -53,7 +53,7 @@ pub struct DirentIter<'a> {
 }
 
 impl<'a> Iterator for DirentIter<'a> {
-    type Item = Dirent;
+    type Item = &'static Dirent;
     fn next(&mut self) -> Option<Self::Item> {
         if self.offset > self.inode.size as usize {
             panic!("dirent offset = {}, inode_size = {}", self.offset, self.inode.size);
@@ -70,7 +70,7 @@ impl<'a> Iterator for DirentIter<'a> {
         return unsafe {
             let result = Some((self.inode.get_data(0)?
                                         .as_ptr()
-                                        .add(self.offset) as *const Dirent).read());
+                                        .add(self.offset) as *const Dirent).as_ref().unwrap());
             self.offset += core::mem::size_of::<Dirent>();
             result
         }

@@ -269,7 +269,9 @@ pub fn exec(path: &[u8], argv: Vec<Vec<u8>>) -> Result<usize, isize> {
 
     let proc = current();
 
-    proc.cwd = Some(inode.parent);
+    if let None = proc.cwd {
+        proc.cwd = Some(inode.parent)
+    }
 
     let mut page_tb = PageTable::new();
 
@@ -409,7 +411,7 @@ pub fn fork() -> Result<usize, isize> {
         page_tb,
         child: Vec::new(),
         channel: None,
-        cwd: proc.cwd.clone(),
+        cwd: proc.cwd,
         // FIXME
         file: Process::default_file_dec(),
     };
@@ -492,30 +494,39 @@ pub fn get_cwd(buf: &mut [u8]) -> Result<usize, isize> {
         current().get_cwd()
     };
 
-    let mut path = VecDeque::<u8>::new();
+    let mut path = VecDeque::<&[u8]>::new();
     while cwd.num != cwd.parent {
-        for entry in cwd.dirent() {
+        let parent = unsafe {
+            fs::get_inode(cwd.parent)
+        };
+
+        for entry in parent.dirent() {
             if entry.inode_num() == cwd.num {
                 // this is it
-                for c in entry.name().iter() {
-                    path.push_front(*c);
-                }
-                cwd = unsafe {
-                    fs::get_inode(cwd.parent)
-                };
+                path.push_front(entry.name());
+                cwd = parent;
                 break;
             }
         }
     }
-    path.push_front(b'/');
+
+    let path = &[b'/'].iter()
+                        .copied()
+                        .chain(path.into_iter()
+                                    .intersperse(&[b'/'])
+                                    .flatten()
+                                    .filter(|c| **c != 0)
+                                    .copied()
+                        ).collect::<Vec<u8>>();
+
     let len = path.len();
-    if len + 1 /* null-terminated*/ > buf.len() {
+    if len + 1 /* null-terminated */ > buf.len() {
         return Err(0);
     }
 
     buf[len] = 0;
 
-    buf[..len].copy_from_slice(path.make_contiguous());
+    buf[..len].copy_from_slice(&path);
 
     Ok(buf.as_ptr() as usize)
 }
