@@ -1,8 +1,6 @@
 # Introduction
 SteinsOS is an operating system featuring non-preemptive kernel targeting on single-core armv8 architecture.
 
-It is buggy and still in progress. My current goal is to make it more stable and add some tests.
-
 SteinOS is derived from following tutorials and software distributions:
 
 [Redox OS](https://gitlab.redox-os.org/redox-os/redox): The state-of-the-art Rust Operating System.

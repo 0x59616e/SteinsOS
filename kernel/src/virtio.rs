@@ -235,7 +235,7 @@ pub unsafe fn disk_rw(buffer: &mut Buffer, write: bool) {
     desc[idx[2]].next = 0;
 
     DISK.info[idx[0]].buf = core::ptr::addr_of_mut!(*buffer);
-    (*buffer).busy = true;
+    buffer.busy = true;
 
     DISK.avail().ring[DISK.avail().idx as usize % NUM as usize] = idx[0] as u16;
     mb!();
