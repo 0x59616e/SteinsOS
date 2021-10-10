@@ -27,7 +27,8 @@ USER_PROG= \
 	ls     \
 	cat    \
 	pwd    \
-	mkdir
+	mkdir  \
+	ge
 
 CPUS=1
 QEMUOPTS=  -m 1G -smp $(CPUS) -semihosting -machine virt -cpu cortex-a57 -nographic -kernel steinsos.bin

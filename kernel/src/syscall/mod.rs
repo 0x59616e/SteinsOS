@@ -19,6 +19,7 @@ pub static SYSCALL_TABLE: &[SyscallFnType] = &[
     sys_getcwd,   // 0x0A
     sys_mkdir,    // 0x0B
     sys_chdir,    // 0x0C
+    sys_sigaction, // 0x0D
 ];
 
 fn string_len(ptr: *const u8) -> usize {
@@ -151,4 +152,8 @@ pub fn sys_chdir(ctx: &mut UserContext) -> Result<usize, isize> {
     };
 
     process::chdir(path)
+}
+
+pub fn sys_sigaction(ctx: &mut UserContext) -> Result<usize, isize> {
+    unimplemented!()
 }

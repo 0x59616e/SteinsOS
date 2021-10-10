@@ -139,6 +139,13 @@ impl SerialPort {
     pub fn receive(&mut self) {
         while self.line_sts().contains(UartFrFlags::RXFF) {
             let c = self.read_reg(self.data_reg) as u8;
+            match c {
+                3 => {
+                    // SIGINT
+                    unimplemented!("SIGINT");
+                }
+                _ => (),
+            }
             process::put_user_input(c);
         }
     }

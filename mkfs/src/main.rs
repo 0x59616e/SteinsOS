@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::cmp::min;
 
 use inode::*;
 use superblock::*;
@@ -86,13 +87,14 @@ fn main() {
         let mut addr = [0_u32; 13];
         // round up to BLOCK_SIZE
         let block_cnt = ((contents.len() + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1)) / BLOCK_SIZE;
-        if block_cnt < 13 {
-            (0..block_cnt).for_each(|i| {
-                addr[i] = block_curr;
-                block_curr += 1;
-            });
-        } else {
-            unimplemented!();
+
+        (0..min(block_cnt, 13)).for_each(|i| {
+            addr[i] = block_curr;
+            block_curr += 1;
+        });
+
+        if block_cnt >= 13 {
+            unimplemented!()
         }
 
         let inode = Inode {

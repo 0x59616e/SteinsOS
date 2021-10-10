@@ -39,6 +39,11 @@ int chdir(char *path) {
     asm("svc " SYS_CHDIR);
 }
 
+int sigaction(int sig, const struct sigaction *act, struct sigaction *oldact)
+{
+    asm("svc " SYS_SIGACTION);
+}
+
 char *fgets(char *s, int size, int fd)
 {
     int len = read(fd, s, size - 1);
