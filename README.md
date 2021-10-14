@@ -14,9 +14,9 @@ Very useful blog about Rust bare-metal programming.
 # Document
 Below are SteinsOS docuements, one in Taiwanese, and the other in English.
 
-[Taiwanese](https://hackmd.io/@wywh0917/rJEE2msfY)
+[Taiwanese](https://hackmd.io/@0x59616e/rJEE2msfY)
 
-[English](https://hackmd.io/@wywh0917/H1kKW4ift)
+[English](https://hackmd.io/@0x59616e/H1kKW4ift)
 
 
 # Prerequisites
