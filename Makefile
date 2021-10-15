@@ -23,11 +23,11 @@ USER_LIB_DIR=$(SLIBC_DIR)/target/aarch64-unknown-none/debug/
 USER_SOURCE=$(wildcard $(USER_DIR)/*.c)
 USER_BASE=0xffff000000000000
 USER_PROG= \
-	sh     \
-	ls     \
-	cat    \
-	pwd    \
-	mkdir
+	_sh     \
+	_ls     \
+	_cat    \
+	_pwd    \
+	_mkdir
 
 CPUS=1
 QEMUOPTS=  -m 1G -smp $(CPUS) -semihosting -machine virt -cpu cortex-a57 -nographic -kernel steinsos.bin
@@ -35,19 +35,18 @@ QEMUOPTS+= -machine gic-version=2
 QEMUOPTS+= -drive file=fs.img,if=none,format=raw,id=x0
 QEMUOPTS+= -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-.PHONY: slibc all mkfs
+.PHONY: all mkfs
 
 crt.o: $(USER_DIR)/crt.S
 	$(CC) $(CFLAGS) $<
 
-%:  $(USER_DIR)/crt.o $(USER_DIR)/%.o $(USER_DIR)/libc.o $(USER_DIR)/malloc.o
+_%:  $(USER_DIR)/crt.o $(USER_DIR)/%.o $(USER_DIR)/libc.o $(USER_DIR)/malloc.o
 	cd $(USER_DIR) && \
 		$(LD) -z max-page-size=4096 -N --entry __start -Ttext $(USER_BASE) -o $@ $^
 
-mkfs: $(USER_PROG) 
+mkfs: $(USER_PROG)
 	cd mkfs && \
-		cargo run $(patsubst %, $(USER_DIR)/%, $^) $(ROOT_DIR)/README.md && \
-		rm $(patsubst %, $(USER_DIR)/%, $^)
+		cargo run $(patsubst %, $(USER_DIR)/%, $^) $(ROOT_DIR)/README.md
 
 
 steinsos: $(ASM)
@@ -70,3 +69,5 @@ clean:
 	cd $(KERNEL_DIR) && cargo clean; \
 	cd $(SLIBC_DIR) && cargo clean; \
 	rm $(ROOT_DIR)/steinsos*; \
+	rm $(USER_DIR)/_*; \
+	rm $(USER_DIR)/*.o; \

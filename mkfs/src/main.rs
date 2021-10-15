@@ -8,8 +8,6 @@ use superblock::*;
 mod inode;
 mod superblock;
 
-const BLOCK_SIZE: usize = 1024;
-
 fn as_u8<T>(src: &T) -> &[u8] {
     let ptr = std::ptr::addr_of!(*src) as *const u8;
     let len = std::mem::size_of::<T>();
@@ -20,126 +18,121 @@ fn as_u8<T>(src: &T) -> &[u8] {
 
 fn to_block<T>(src: &T) ->  Vec<u8> {
     let mut v = as_u8(src).to_vec();
-    assert!(v.len() <= BLOCK_SIZE);
-    v.resize(BLOCK_SIZE, 0_u8);
+    assert!(v.len() <= GATEFS_BLOCK_SIZE);
+    v.resize(GATEFS_BLOCK_SIZE, 0_u8);
     v
 }
 
-const DATA_BLOCK_COUNT: usize = 1000;
-const BITMAP_BLOCK: u32 = 1;
-const ROOT_INODE_BLOCK: u32 = 2;
+fn inode_range(ino: u32) -> (usize, usize) {
+    let start = (inode_blk_no(ino) * GATEFS_BLOCK_SIZE as u32 + inode_blk_shift(ino)) as usize;
+    let end = start + core::mem::size_of::<Inode>();
+    (start, end)
+}
 
+const FREE_BLOCKS: u32 = 50; // 50MiB
 fn main() {
-    // block 0: superblock
-    // block 1: bitmap
-    // block 2: root inode
-    // block 3~: data block
+    let mut datas: Vec<(Inode, Vec<u8>)> = Vec::new();
+    let mut result: Vec<u8> = Vec::new();
 
-    let superblock = Superblock {
-        root_inode: ROOT_INODE_BLOCK,
-        bitmap_block: BITMAP_BLOCK,
+    result.resize((FREE_BLOCKS << 20) as usize, 0_u8);
+
+    // prepare root directory
+    let progs = env::args().skip(1);
+
+    let mut blk_no = GATEFS_DATA_BLOCK_NR;
+    let mut i_no = 0;
+
+    let root_i = Inode {
+        i_type: 1, // directory
+        i_no: i_no,
+        i_parent: 0,
+        i_size: 0,
+        i_nlink: progs.count() as u32,
+        root_addr_block: blk_no,
     };
+    blk_no += 1;
+    i_no += 1;
 
-    let inode_count = env::args().count() as u32;
-
-    let mut result = Vec::<u8>::new();
-    result.append(&mut to_block(&superblock));
-
-    let mut root_block = Vec::<u8>::new();
-    let mut root_inode = Inode {
-        ty: 0,
-        num: ROOT_INODE_BLOCK,
-        parent: ROOT_INODE_BLOCK,
-        size: 0,      // unknown
-        addr: [inode_count + 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    };
-
-    // current directory
-    root_block.extend_from_slice(as_u8(&ROOT_INODE_BLOCK));
-    root_block.extend_from_slice(&{
-        let mut name = [0_u8; 12];
-        name[0] = b'.';
-        name
-    });
-
-    let mut data_blocks = Vec::<Vec<u8>>::new();
-    let mut inodes = Vec::<Inode>::new();
-
-    let mut inode_curr: u32 = ROOT_INODE_BLOCK + 1;
-    let mut block_curr = inode_count + 3;
+    let range = inode_range(0);
+    result[range.0..range.1].copy_from_slice(as_u8(&root_i));
 
     for prog in env::args().skip(1) {
-        let mut prog_name = prog.split('/').last().unwrap().as_bytes().to_vec();
-        let contents = fs::read(prog).unwrap();
-
-        assert!(prog_name.len() <= 12);
-
-        // struct Dirent {
-        //     inode_num: u32,
-        //     name: [u8; 12],
-        // }
-
-        prog_name.resize(12, 0_u8);
-        root_block.extend_from_slice(as_u8(&inode_curr));
-        root_block.append(&mut prog_name);
-
-        let mut addr = [0_u32; 13];
-        // round up to BLOCK_SIZE
-        let block_cnt = ((contents.len() + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1)) / BLOCK_SIZE;
-        if block_cnt < 13 {
-            (0..block_cnt).for_each(|i| {
-                addr[i] = block_curr;
-                block_curr += 1;
-            });
-        } else {
-            unimplemented!();
-        }
-
+        let prog = fs::read(prog).expect("Read program failed");
         let inode = Inode {
-            ty: 1,
-            num: inode_curr,
-            parent: ROOT_INODE_BLOCK,
-            size: contents.len() as u32,
-            addr,
+            i_type: 0,
+            i_no: i_no,
+            i_parent: 0,
+            i_size: prog.len() as u32,
+            i_nlink: 0,
+            root_addr_block: blk_no,
+        };
+        let range = inode_range(i_no);
+        blk_no += 1;
+        i_no += 1;
+        
+        result[range.0..range.1].copy_from_slice(as_u8(&inode));
+        datas.push((inode, prog));
+    }
+
+    // prepare superblock
+    let sb = Superblock {
+        magic: GATEFS_MAGIC,
+        inode_bitmap_block_nr: GATEFS_INODE_BITMAP_BLOCK_NR,
+        data_block_bitmap_nr: GATEFS_DATA_BITMAP_BLOCK_NR,
+        root_inode_block_nr: inode_blk_no(0),
+        nr_free_blocks: FREE_BLOCKS,
+        nr_free_inodes: GATEFS_FREE_INODES,
+    };
+    result[0..GATEFS_BLOCK_SIZE].copy_from_slice(&to_block(&sb));
+
+    for (inode, mut data) in datas {
+        let len = (data.len() + GATEFS_BLOCK_SIZE - 1) & !(GATEFS_BLOCK_SIZE - 1);
+        data.resize(len, 0);
+
+        // prepare address block
+        let addr = inode.root_addr_block as usize;
+        let addr_block = unsafe {
+            let (start, end) = (addr * GATEFS_BLOCK_SIZE, (addr + 1) * GATEFS_BLOCK_SIZE);
+            let ptr = core::ptr::addr_of_mut!(result[start..end]) as *mut u8 as *mut AddrBlock;
+            &mut (*ptr)
         };
 
-        // println!("{:?}", inode);
-        inodes.push(inode);
-        data_blocks.push(contents);
-        inode_curr += 1;
+        addr_block.header = AddrBlockHeader {
+            leaf: 0,
+            entries_cnt: 1,
+        };
+
+        let blk_cnt = (len / GATEFS_BLOCK_SIZE) as u32;
+        addr_block.entries[0] = AddrEntry {
+            logical_blk: 0,
+            physical_blk: blk_no,
+            len: blk_cnt,
+        };
+        let start = blk_no as usize * GATEFS_BLOCK_SIZE;
+        let end = start + len;
+        result[start..end].copy_from_slice(&data);
+
+        blk_no += blk_cnt;
     }
-    root_inode.size = root_block.len() as u32;
-    // println!("{:?}", root_inode);
-    assert!(root_block.len() <= BLOCK_SIZE);
-    inodes.insert(0, root_inode);
-    data_blocks.insert(0, root_block);
 
-    let data_block_count = data_blocks.iter()
-                                        .fold(0_usize, |acc, x| acc + x.len() / 1024 + (x.len() % 1024 != 0) as usize);
-
-    assert!(data_blocks.len() <= DATA_BLOCK_COUNT);
-    data_blocks.resize(DATA_BLOCK_COUNT, vec![0_u8; BLOCK_SIZE]);
-
-    // write data block bitmap
-    let mut bitmap = vec![0_u8; BLOCK_SIZE];
-    (0..(inode_count as usize + data_block_count + 2)).for_each(|i| bitmap[i / 8] |= 1 << (i % 8));
-    // println!("{:?}", bitmap);
-    result.append(&mut bitmap);
-
-    // write inode
-    inodes.into_iter().for_each(|inode| {
-        result.append(&mut to_block(&inode));
+    // inode bitmap
+    let mut bitmap = [0_u8; 1024 / 8];
+    (0..i_no as usize).for_each(|i|{
+        bitmap[i / 8] |= 1 << (i % 8);
     });
 
+    let start = GATEFS_INODE_BITMAP_BLOCK_NR as usize * GATEFS_BLOCK_SIZE;
+    let end = start + GATEFS_BLOCK_SIZE / 8;
+    result[start..end].copy_from_slice(&bitmap);
 
-    // println!("data_block_count = {}, inode_count = {}", data_block_count, inode_count);
-
-
-    // write data block
-    data_blocks.into_iter().for_each(|mut data| {
-        result.append(&mut data);
-        result.resize((result.len() + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1), 0);
+    // data bitmap
+    let mut bitmap = [0_u8; 1024/ 8];
+    (0..blk_no as usize).for_each(|i|{
+        bitmap[i / 8] |= 1 << (i % 8);
     });
+    let start = GATEFS_DATA_BITMAP_BLOCK_NR as usize * GATEFS_BLOCK_SIZE;
+    let end = start + GATEFS_BLOCK_SIZE / 8;
+    result[start..end].copy_from_slice(&bitmap);
 
-    fs::write("../fs.img", result).unwrap();
+    fs::write("../fs.img", result).expect("Write fs.img failed");
 }
